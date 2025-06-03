@@ -4,13 +4,13 @@ require('dotenv').config();
 
 console.log('🧪 Probando conexión a Supabase PostgreSQL...\n');
 
-// Configuración de Supabase
+// Configuración de Supabase (CORREGIDA)
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'db.ugcrigkvfejqlsoqnxxh.supabase.co',
+  user: process.env.DB_USER || 'postgres.ugcrigkvfejqlsoqnxxh',
+  host: process.env.DB_HOST || 'aws-0-us-east-2.pooler.supabase.com',
   database: process.env.DB_NAME || 'postgres',
   password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT || 5432,
+  port: process.env.DB_PORT || 6543, // Puerto correcto del pooler
   ssl: {
     rejectUnauthorized: false
   },

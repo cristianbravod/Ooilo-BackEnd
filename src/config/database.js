@@ -1,93 +1,161 @@
-// backend/src/config/database.js - Configuración para Supabase
+// backend/src/config/database.js - Configuración corregida para SCRAM
 require('dotenv').config();
 
-const config = {
-  // Configuración de Supabase PostgreSQL
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'db.ugcrigkvfejqlsoqnxxh.supabase.co',
+// 🔧 CONFIGURACIÓN CORREGIDA PARA SUPABASE CON SCRAM
+const baseConfig = {
+  user: process.env.DB_USER || 'postgres.ugcrigkvfejqlsoqnxxh',
+  host: process.env.DB_HOST || 'aws-0-us-east-2.pooler.supabase.com',
   database: process.env.DB_NAME || 'postgres',
-  password: process.env.DB_PASSWORD, // REQUERIDO para Supabase
-  port: process.env.DB_PORT || 5432,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 6543,
   
-  // Configuraciones adicionales de la pool de conexiones
-  max: 10, // Menos conexiones para Supabase (límites)
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000, // Más tiempo para conexiones remotas
-  
-  // SSL OBLIGATORIO para Supabase
+  // 🔧 CONFIGURACIONES ESPECÍFICAS PARA RESOLVER SCRAM
   ssl: {
     rejectUnauthorized: false
   },
   
-  // Configuraciones específicas para Supabase
+  // Configuraciones de pool optimizadas para Supabase
+  max: 5, // Menos conexiones para evitar problemas SCRAM
+  min: 0,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
+  acquireTimeoutMillis: 15000,
+  
+  // Configuraciones específicas para SCRAM authentication
   application_name: 'restaurant_app',
+  keepAlive: false,
+  keepAliveInitialDelayMillis: 0,
+  
+  // Timeouts para evitar problemas con SCRAM
   statement_timeout: 30000,
   query_timeout: 30000,
-  connectionString: process.env.DATABASE_URL, // Soporte para URL completa
+  
+  // Soporte para URL completa si está disponible
+  ...(process.env.DATABASE_URL && {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  })
 };
 
 // Configuración específica por ambiente
 const environments = {
   development: {
-    ...config,
-    max: 5, // Menos conexiones en desarrollo
-    ssl: {
-      rejectUnauthorized: false
-    }
+    ...baseConfig,
+    max: 3, // Aún menos conexiones en desarrollo
+    idleTimeoutMillis: 5000,
+    log: ['error', 'warn'], // Solo errores y warnings
   },
   
   test: {
-    ...config,
+    ...baseConfig,
     database: process.env.DB_NAME_TEST || 'postgres_test',
-    max: 2,
-    ssl: {
-      rejectUnauthorized: false
-    }
+    max: 1, // Solo una conexión para tests
+    idleTimeoutMillis: 1000,
   },
   
   production: {
-    ...config,
-    ssl: {
-      rejectUnauthorized: false
-    },
-    max: 10, // Supabase tiene límites de conexión
-    idleTimeoutMillis: 60000,
+    ...baseConfig,
+    max: 10, // Más conexiones en producción
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 30000,
   }
 };
 
-// Validar configuración de Supabase
-function validateSupabaseConfig() {
-  const requiredVars = ['DB_PASSWORD'];
-  const missing = requiredVars.filter(varName => !process.env[varName]);
+// 🔧 FUNCIÓN PARA CREAR POOL CON FALLBACK
+function createPoolWithFallback() {
+  const { Pool } = require('pg');
+  const currentEnv = process.env.NODE_ENV || 'development';
+  const config = environments[currentEnv] || environments.development;
   
-  if (missing.length > 0) {
-    console.error('❌ Variables de entorno faltantes para Supabase:');
-    missing.forEach(varName => {
-      console.error(`   - ${varName}`);
+  // Intentar con URL completa primero si está disponible
+  if (process.env.DATABASE_URL) {
+    console.log('🔗 Usando DATABASE_URL completa');
+    return new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: config.max,
+      idleTimeoutMillis: config.idleTimeoutMillis,
+      connectionTimeoutMillis: config.connectionTimeoutMillis
     });
-    console.error('\n💡 Configura estas variables en tu archivo .env:');
-    console.error('   DB_PASSWORD=Comoelvinot2012');
-    console.error('   # O usa la URL completa:');
-    console.error('   DATABASE_URL=postgresql://postgres:PASSWORD@db.ugcrigkvfejqlsoqnxxh.supabase.co:5432/postgres');
-    process.exit(1);
+  }
+  
+  // Usar configuración individual
+  console.log('🔧 Usando configuración individual');
+  return new Pool(config);
+}
+
+// Validar configuración
+function validateConfig() {
+  if (!process.env.DB_PASSWORD) {
+    console.error('❌ ERROR: DB_PASSWORD no está configurado');
+    console.error('💡 Configura tu contraseña de Supabase en .env:');
+    console.error('   DB_PASSWORD=tu_password_real');
+    
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    }
+  }
+  
+  // Verificar formato del usuario
+  const user = process.env.DB_USER || 'postgres.ugcrigkvfejqlsoqnxxh';
+  if (!user.includes('.')) {
+    console.warn('⚠️ ADVERTENCIA: El usuario debería incluir el proyecto: postgres.{project-id}');
+  }
+  
+  // Verificar puerto
+  const port = process.env.DB_PORT || 6543;
+  if (port != 6543 && port != 5432) {
+    console.warn('⚠️ ADVERTENCIA: Puerto inusual para Supabase:', port);
+  }
+}
+
+// Función para probar conexión
+async function testConnection(pool) {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('SELECT NOW()');
+    console.log('✅ Conexión a Supabase exitosa');
+    return true;
+  } catch (error) {
+    console.error('❌ Error de conexión:', error.message);
+    
+    if (error.message.includes('SCRAM')) {
+      console.error('💡 Error SCRAM detectado. Posibles soluciones:');
+      console.error('   1. Verificar contraseña en Supabase Dashboard');
+      console.error('   2. Usar DATABASE_URL completa');
+      console.error('   3. Reiniciar contraseña del proyecto');
+    }
+    
+    return false;
+  } finally {
+    if (client) client.release();
   }
 }
 
 // Validar solo en entornos que no sean test
 if (process.env.NODE_ENV !== 'test') {
-  validateSupabaseConfig();
+  validateConfig();
 }
 
-// Exportar configuración según el ambiente
+// Exportar configuración
 const currentEnv = process.env.NODE_ENV || 'development';
 const finalConfig = environments[currentEnv] || environments.development;
 
 console.log('🔧 Configuración de base de datos:');
 console.log(`   Entorno: ${currentEnv}`);
 console.log(`   Host: ${finalConfig.host}`);
+console.log(`   Puerto: ${finalConfig.port}`);
 console.log(`   Database: ${finalConfig.database}`);
 console.log(`   User: ${finalConfig.user}`);
 console.log(`   SSL: ${finalConfig.ssl ? 'habilitado' : 'deshabilitado'}`);
 console.log(`   Max conexiones: ${finalConfig.max}`);
+console.log(`   URL completa: ${process.env.DATABASE_URL ? 'configurada' : 'no configurada'}`);
 
-module.exports = finalConfig;
+// Exportar tanto la configuración como las funciones útiles
+module.exports = {
+  ...finalConfig,
+  createPoolWithFallback,
+  testConnection,
+  validateConfig
+};
