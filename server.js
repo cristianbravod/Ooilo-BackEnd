@@ -17,10 +17,10 @@ const corsOptions = {
     'http://localhost:19001', // Expo DevTools
     'http://localhost:19006', // Expo Web
     // ⚠️ AGREGAR TU IP REAL AQUÍ:
-    'http://192.168.1.100:19000', // Cambiar por tu IP WiFi
-    'http://192.168.2.134:19000', // Tu IP actual del código
-    `exp://192.168.1.100:19000`, // Para Expo Go
-    `exp://192.168.2.134:19000`,
+    'postgresql://postgres:Comoelvinot2012@db.ugcrigkvfejqlsoqnxxh.supabase.co:5432/postgres', // Cambiar por tu IP WiFi
+    'postgresql://postgres:Comoelvinot2012@db.ugcrigkvfejqlsoqnxxh.supabase.co:5432/postgres', // Tu IP actual del código
+    `postgresql://postgres:Comoelvinot2012@db.ugcrigkvfejqlsoqnxxh.supabase.co:5432/postgres`, // Para Expo Go
+    `postgresql://postgres:Comoelvinot2012@db.ugcrigkvfejqlsoqnxxh.supabase.co:5432/postgres`,
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
