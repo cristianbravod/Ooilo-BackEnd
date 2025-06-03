@@ -1,29 +1,57 @@
 {
-  "name": "restaurant-backend-mvc",
+  "name": "restaurant-backend",
   "version": "2.0.0",
-  "description": "Restaurant Management API - MVC Architecture",
+  "description": "Backend para sistema de gestión de restaurante con Supabase",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup-db": "node scripts/setup-database.js",
-    "migrate-db": "node scripts/migrate-database.js",
-    "check-db": "node scripts/check-database.js"
+    "setup-supabase": "node scripts/setup-supabase.js",
+    "test-connection": "node scripts/test-supabase.js",
+    "reset-db": "node scripts/reset-supabase.js",
+    "seed-data": "node scripts/seed-data.js",
+    "check-env": "node scripts/check-env.js",
+    "logs": "heroku logs --tail",
+    "deploy": "git push heroku main"
   },
+  "keywords": [
+    "restaurant",
+    "api",
+    "nodejs",
+    "postgresql",
+    "supabase",
+    "express"
+  ],
+  "author": "Tu Nombre",
+  "license": "MIT",
   "dependencies": {
-    "@react-native-community/datetimepicker": "^8.4.1",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
     "express": "^4.18.2",
-    "express-validator": "^6.15.0",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.0"
+    "dotenv": "^16.3.1",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.8.1",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "jest": "^29.6.2",
+    "supertest": "^6.3.3",
+    "@types/node": "^20.4.9"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-usuario/restaurant-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tu-usuario/restaurant-backend/issues"
+  },
+  "homepage": "https://github.com/tu-usuario/restaurant-backend#readme"
 }
