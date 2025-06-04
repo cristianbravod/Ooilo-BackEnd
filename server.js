@@ -12,14 +12,54 @@ const PORT = process.env.PORT || 3000;
 // Configuración CORS
 const corsOptions = {
   origin: [
+    // IPs locales para desarrollo
     'http://localhost:3000',
-    'http://localhost:19000',
-    'http://localhost:19001',
-    'http://localhost:19006',
-    'http://192.168.1.100:19000',
+    'http://localhost:19000', // Expo Metro Bundler
+    'http://localhost:19001', // Expo DevTools
+    'http://localhost:19006', // Expo Web
+    'http://192.168.2.134:3000', // Tu IP local actual
     'http://192.168.2.134:19000',
-    `exp://192.168.1.100:19000`,
     `exp://192.168.2.134:19000`,
+    
+    // 🔧 TUS IPs FIJAS EN LA NUBE - PUERTO 3000 (Backend)
+    'http://44.226.145.213:3000',
+    'http://54.187.200.255:3000',
+    'http://34.213.214.55:3000',
+    'http://35.164.95.156:3000',
+    'http://44.230.95.183:3000',
+    'http://44.229.200.200:3000',
+    
+    // 🔧 TUS IPs FIJAS - PUERTO 19000 (Expo en móvil)
+    'http://44.226.145.213:19000',
+    'http://54.187.200.255:19000',
+    'http://34.213.214.55:19000',
+    'http://35.164.95.156:19000',
+    'http://44.230.95.183:19000',
+    'http://44.229.200.200:19000',
+    
+    // 🔧 TUS IPs FIJAS - Expo Go Protocol
+    'exp://44.226.145.213:19000',
+    'exp://54.187.200.255:19000',
+    'exp://34.213.214.55:19000',
+    'exp://35.164.95.156:19000',
+    'exp://44.230.95.183:19000',
+    'exp://44.229.200.200:19000',
+    
+    // 🔧 TUS IPs FIJAS - HTTPS (si usas SSL)
+    'https://44.226.145.213',
+    'https://54.187.200.255',
+    'https://34.213.214.55',
+    'https://35.164.95.156',
+    'https://44.230.95.183',
+    'https://44.229.200.200',
+    
+    // 🔧 TUS IPs FIJAS - Sin puerto (para conexiones genéricas)
+    'http://44.226.145.213',
+    'http://54.187.200.255',
+    'http://34.213.214.55',
+    'http://35.164.95.156',
+    'http://44.230.95.183',
+    'http://44.229.200.200'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -30,11 +70,19 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logging
+// Logging mejorado
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  const clientIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${clientIP}`);
+  
+  // Log de Origin para debugging CORS
+  if (req.headers.origin) {
+    console.log(`   Origin: ${req.headers.origin}`);
+  }
+  
   next();
 });
+
 
 // Configuración Supabase
 const pool = new Pool({
@@ -696,6 +744,8 @@ app.use((err, req, res, next) => {
 // =====================================================
 // INICIALIZACIÓN
 // =====================================================
+
+// 🌐 ACTUALIZAR LA FUNCIÓN startServer PARA MOSTRAR IPs
 async function startServer() {
   try {
     console.log('🚀 Iniciando servidor del restaurante con Supabase...');
@@ -716,6 +766,19 @@ async function startServer() {
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
       console.log(`☁️ Base de datos: Supabase PostgreSQL`);
+      
+      // 🔧 MOSTRAR TUS IPs FIJAS AUTORIZADAS
+      console.log(`\n🌐 IPs fijas autorizadas para CORS:`);
+      console.log(`   • Principal: http://44.226.145.213:${PORT}/api`);
+      console.log(`   • Backup 1:  http://54.187.200.255:${PORT}/api`);
+      console.log(`   • Backup 2:  http://34.213.214.55:${PORT}/api`);
+      console.log(`   • Backup 3:  http://35.164.95.156:${PORT}/api`);
+      console.log(`   • Backup 4:  http://44.230.95.183:${PORT}/api`);
+      console.log(`   • Backup 5:  http://44.229.200.200:${PORT}/api`);
+      
+      console.log(`\n📱 Para tu app React Native, usa:`);
+      console.log(`   API_BASE_URL = 'http://44.226.145.213:${PORT}/api'`);
+      
       console.log(`\n📡 Endpoints principales:`);
       console.log(`   • GET  /api/health`);
       console.log(`   • GET  /api/menu/sync`);
@@ -723,7 +786,7 @@ async function startServer() {
       console.log(`   • POST /api/auth/login`);
       console.log(`   • GET  /api/categorias`);
       console.log(`   • GET  /api/platos-especiales`);
-      console.log(`\n✅ Servidor listo para recibir peticiones!`);
+      console.log(`\n✅ Servidor listo para recibir peticiones desde las IPs autorizadas!`);
     });
 
     const gracefulShutdown = (signal) => {
